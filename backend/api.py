@@ -7,6 +7,14 @@ from backend.slack_alerts import send_slack_alert
 from fastapi_utils.tasks import repeat_every
 from typing import List
 import os
+import subprocess
+
+def run_stream_inference():
+    subprocess.run(["python", "simulation_and_detection_/src/stream_inference.py"])
+
+def run_fetch_threats():
+    subprocess.run(["python", "predictive_ai/fetch_threats.py"])
+
 
 app = FastAPI()
 
@@ -25,6 +33,7 @@ class ThreatReport(BaseModel):
 
 @app.post("/report/anomaly")
 async def report_anomaly(_: dict):
+    run_stream_inference()
     log_path = "simulation_and_detection_/logs/stream_logs.jsonl"
     seen_path = "backend/seen_anomalies.json"
 
@@ -83,6 +92,7 @@ async def report_anomaly(_: dict):
 
 @app.post("/report/threat")
 async def report_threat(data: ThreatReport):
+    run_fetch_threats()
     file_path = "predictive_ai/predicted_threats.json"
 
     try:
