@@ -362,15 +362,12 @@ def load_threat_data():
                         timeout=180  # 3 minute timeout for AI analysis
                     )
                     
+                    # Only show errors if something actually failed
                     if result.returncode != 0:
-                        st.error(f"Error executing threat prediction script: {result.stderr}")
-                        # Try to read existing file if script failed
-                        if not output_file.exists():
-                            return []
-                    else:
-                        if result.stdout:
-                            st.success("🧠 AI threat analysis completed!")
-                            
+                        st.error(f"Threat prediction failed (return code: {result.returncode})")
+                        if "GEMINI_API_KEY" not in result.stdout:
+                            st.error(f"Error details: {result.stderr}")
+                
             except subprocess.TimeoutExpired:
                 st.error("Threat prediction script timed out after 3 minutes")
                 # Try to read existing file if available
@@ -378,6 +375,13 @@ def load_threat_data():
                     return []
             except subprocess.SubprocessError as e:
                 st.error(f"Failed to execute threat prediction script: {str(e)}")
+                # Try to read existing file if available
+                if not output_file.exists():
+                    return []
+            except Exception as e:
+                st.error(f"Unexpected error running threat prediction: {str(e)}")
+                import traceback
+                st.error(f"Traceback: {traceback.format_exc()}")
                 # Try to read existing file if available
                 if not output_file.exists():
                     return []
@@ -498,20 +502,23 @@ def create_threat_distribution(threats):
 
 def display_anomaly_explainability(anomaly):
     """Display GNN model explainability for anomalies"""
-    if 'why' in anomaly and anomaly['why']:
+    if isinstance(anomaly, dict) and 'why' in anomaly and anomaly['why']:
         st.markdown("#### 🔍 Model Explainability")
         st.markdown("**Top contributing features to anomaly score:**")
         
         for i, feature in enumerate(anomaly['why'][:3], 1):
-            with st.container():
-                st.markdown(f"""
-                <div class="explainability-card">
-                    <strong>{i}. {feature['feature']}</strong><br>
-                    Original: {feature['original']:.4f} | 
-                    Reconstructed: {feature['reconstructed']:.4f} | 
-                    <strong>Error: {feature['abs_error']:.4f}</strong>
-                </div>
-                """, unsafe_allow_html=True)
+            if isinstance(feature, dict) and all(key in feature for key in ['feature', 'original', 'reconstructed', 'abs_error']):
+                with st.container():
+                    st.markdown(f"""
+                    <div class="explainability-card">
+                        <strong>{i}. {feature['feature']}</strong><br>
+                        Original: {feature['original']:.4f} | 
+                        Reconstructed: {feature['reconstructed']:.4f} | 
+                        <strong>Error: {feature['abs_error']:.4f}</strong>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info(f"Feature {i}: Data format not compatible for display")
 
 def check_for_new_data(anomalies, threats):
     """Check for new data and trigger alerts"""
@@ -846,34 +853,42 @@ def main():
                     st.markdown("### 🎯 Threat Distribution")
                     st.info("No threat data available. Run the CVE fetching script to generate data.")
             
+
             # Feature importance heatmap for recent anomalies
-            if anomalies and any('why' in a for a in anomalies):
+            if anomalies:
                 st.markdown("### 🔥 Feature Importance Analysis")
                 
                 feature_data = []
                 for anomaly in anomalies:
-                    if 'why' in anomaly:
+                    if isinstance(anomaly, dict) and 'why' in anomaly and anomaly['why']:
                         for feature in anomaly['why']:
-                            feature_data.append({
-                                'stream_index': anomaly.get('stream_index', 0),
-                                'feature': feature['feature'],
-                                'abs_error': feature['abs_error']
-                            })
+                            if isinstance(feature, dict) and all(key in feature for key in ['feature', 'abs_error']):
+                                feature_data.append({
+                                    'stream_index': anomaly.get('stream_index', 0),
+                                    'feature': feature['feature'],
+                                    'abs_error': feature['abs_error']
+                                })
                 
                 if feature_data:
                     df_features = pd.DataFrame(feature_data)
-                    pivot_df = df_features.pivot(index='feature', columns='stream_index', values='abs_error')
-                    
-                    fig = px.imshow(pivot_df, 
-                                   color_continuous_scale='Reds',
-                                   title="Feature Contribution to Anomaly Detection")
-                    fig.update_layout(
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        font_color='white',
-                        title_font_color='#667eea'
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
+                    if len(df_features) > 0:
+                        try:
+                            pivot_df = df_features.pivot(index='feature', columns='stream_index', values='abs_error')
+                            
+                            fig = px.imshow(pivot_df, 
+                                           color_continuous_scale='Reds',
+                                           title="Feature Contribution to Anomaly Detection")
+                            fig.update_layout(
+                                plot_bgcolor='rgba(0,0,0,0)',
+                                paper_bgcolor='rgba(0,0,0,0)',
+                                font_color='white',
+                                title_font_color='#667eea'
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+                        except Exception as e:
+                            st.info("Feature importance data not available in current format")
+                else:
+                    st.info("No feature importance data available. Run GNN inference to generate explainable anomalies.")
         else:
             st.markdown("### 🚀 Getting Started")
             st.info("No data available yet. Please run the background scripts to start monitoring:")

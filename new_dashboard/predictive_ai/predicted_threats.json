@@ -1,18 +1,122 @@
 [
     {
-        "threat_type": "Configuration Error",
-        "predicted_time": "",
-        "description": "API key not configured. Please set GEMINI_API_KEY in .env file to enable AI threat analysis.",
-        "risk_level": "Medium",
+        "threat_type": "Critical SSH Remote Code Execution",
+        "predicted_time": "2025-01-11T15:30:00",
+        "description": "CVE-2025-0001 describes a critical vulnerability in OpenSSH versions 8.0-9.5 that allows unauthenticated remote attackers to execute arbitrary commands as root by exploiting a buffer overflow in the key exchange process. This vulnerability has a CVSS score of 9.8 and active exploits have been observed in the wild.",
+        "risk_level": "High",
         "affected_systems": [
-            "AI Analysis System"
+            "web-server-01",
+            "web-server-02",
+            "db-server-01",
+            "file-server-01"
         ],
         "suggested_fixes": [
-            "Set GEMINI_API_KEY in .env file",
-            "Install required dependencies"
+            "Immediately upgrade OpenSSH to version 9.6 or later",
+            "Restrict SSH access to trusted IP addresses only",
+            "Disable root login over SSH",
+            "Implement fail2ban to block brute force attempts",
+            "Enable SSH key-based authentication only"
         ],
-        "confidence_score": 0.0,
-        "confidence_reasoning": "API not configured",
-        "file": "config_error.txt"
+        "confidence_score": 0.95,
+        "confidence_reasoning": "Critical CVSS score, active exploits observed, multiple affected systems in infrastructure",
+        "file": "CVE-2025-0001.txt"
+    },
+    {
+        "threat_type": "Apache HTTP Server Directory Traversal",
+        "predicted_time": "2025-01-11T14:15:00",
+        "description": "CVE-2025-0002 affects Apache HTTP Server versions 2.4.0-2.4.58, allowing attackers to read arbitrary files outside the web root directory through path traversal attacks. This can lead to exposure of sensitive configuration files, database credentials, and system information.",
+        "risk_level": "High",
+        "affected_systems": [
+            "web-server-02"
+        ],
+        "suggested_fixes": [
+            "Upgrade Apache HTTP Server to version 2.4.59 or later",
+            "Configure proper directory access controls",
+            "Implement Web Application Firewall rules",
+            "Review and restrict file system permissions",
+            "Enable Apache security modules"
+        ],
+        "confidence_score": 0.88,
+        "confidence_reasoning": "High severity vulnerability affecting web infrastructure, potential for data exposure",
+        "file": "CVE-2025-0002.txt"
+    },
+    {
+        "threat_type": "MySQL Privilege Escalation Vulnerability",
+        "predicted_time": "2025-01-11T13:45:00",
+        "description": "CVE-2025-0003 is a privilege escalation vulnerability in MySQL versions 8.0.0-8.0.35 that allows authenticated users to gain administrative privileges through malformed SQL queries. This could lead to complete database compromise.",
+        "risk_level": "High",
+        "affected_systems": [
+            "db-server-01",
+            "web-server-01",
+            "web-server-02"
+        ],
+        "suggested_fixes": [
+            "Upgrade MySQL to version 8.0.36 or later",
+            "Review and restrict database user privileges",
+            "Implement database activity monitoring",
+            "Enable MySQL audit logging",
+            "Separate database users by application function"
+        ],
+        "confidence_score": 0.92,
+        "confidence_reasoning": "Database systems are critical infrastructure, privilege escalation poses significant risk",
+        "file": "CVE-2025-0003.txt"
+    },
+    {
+        "threat_type": "Windows SMB Remote Code Execution",
+        "predicted_time": "2025-01-11T12:20:00",
+        "description": "CVE-2025-0004 affects Windows SMB protocol implementation, allowing remote attackers to execute arbitrary code without authentication. Similar to EternalBlue, this vulnerability can be used for lateral movement and ransomware deployment.",
+        "risk_level": "High",
+        "affected_systems": [
+            "workstation-01",
+            "file-server-01"
+        ],
+        "suggested_fixes": [
+            "Apply latest Windows security updates immediately",
+            "Disable SMBv1 protocol completely",
+            "Restrict SMB access to trusted networks only",
+            "Enable Windows Defender Advanced Threat Protection",
+            "Implement network segmentation"
+        ],
+        "confidence_score": 0.97,
+        "confidence_reasoning": "Critical Windows vulnerability with high exploitability, similar to previous wormable threats",
+        "file": "CVE-2025-0004.txt"
+    },
+    {
+        "threat_type": "pfSense Firewall Authentication Bypass",
+        "predicted_time": "2025-01-11T10:30:00",
+        "description": "CVE-2025-0006 allows attackers to bypass authentication in pfSense firewall web interface through session manipulation. This could lead to complete firewall compromise and network infiltration.",
+        "risk_level": "High",
+        "affected_systems": [
+            "firewall-01"
+        ],
+        "suggested_fixes": [
+            "Upgrade pfSense to latest stable version",
+            "Change default admin credentials",
+            "Restrict web interface access to management network",
+            "Enable two-factor authentication",
+            "Monitor firewall configuration changes"
+        ],
+        "confidence_score": 0.9,
+        "confidence_reasoning": "Firewall compromise poses critical risk to entire network infrastructure",
+        "file": "CVE-2025-0006.txt"
+    },
+    {
+        "threat_type": "Postfix Mail Server Buffer Overflow",
+        "predicted_time": "2025-01-11T11:10:00",
+        "description": "CVE-2025-0005 is a buffer overflow vulnerability in Postfix mail server versions 3.0-3.7 that can be exploited remotely to gain system access. Attackers can send specially crafted emails to trigger the overflow.",
+        "risk_level": "Medium",
+        "affected_systems": [
+            "mail-server-01"
+        ],
+        "suggested_fixes": [
+            "Upgrade Postfix to version 3.8 or later",
+            "Configure mail filtering and rate limiting",
+            "Implement email security gateway",
+            "Monitor mail server logs for suspicious activity",
+            "Restrict mail server network access"
+        ],
+        "confidence_score": 0.85,
+        "confidence_reasoning": "Mail server vulnerability with remote exploitation potential",
+        "file": "CVE-2025-0005.txt"
     }
 ]
