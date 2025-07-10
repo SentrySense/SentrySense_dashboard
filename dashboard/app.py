@@ -238,8 +238,8 @@ def load_anomaly_data():
         from pathlib import Path
         
         # Step 1: Run stream_inference.py to update the log
-        stream_script = Path("simulation_and_detection_\src\stream_inference.py")
-        log_file = Path("simulation_and_detection_\logs\stream_logs.jsonl")
+        stream_script = Path("simulation_and_detection_/src/stream_inference.py")
+        log_file = Path("simulation_and_detection_/logs/stream_logs.jsonl")
         
         if not stream_script.exists():
             st.error(f"Inference script not found: {stream_script}")

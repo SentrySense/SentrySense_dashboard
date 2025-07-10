@@ -10,11 +10,11 @@ import pytz
 import random
 
 # Paths
-GRAPH_PATH = 'simulation_and_detection_/splits/train_graph_0.pt'
-MODEL_PATH = 'simulation_and_detection_/models/gnn_model.pt'
-TRAIN_PROCESSED = 'simulation_and_detection_/splits/train_clean_numeric.csv'
-STREAM_FILE = 'simulation_and_detection_/splits/stream_clean_numeric.csv'
-LOG_FILE = 'simulation_and_detection_/logs/stream_logs.jsonl'
+GRAPH_PATH = 'splits/train_graph_0.pt'
+MODEL_PATH = 'models/gnn_model.pt'
+TRAIN_PROCESSED = 'splits/train_clean_numeric.csv'
+STREAM_FILE = 'splits/stream_clean_numeric.csv'
+LOG_FILE = 'logs/stream_logs.jsonl'
 
 CONTEXT_COLS = ['masked_user', 'source_ip', 'resource']
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -158,7 +158,6 @@ def main():
             abs_errors = np.abs(original - reconstructed)
             feature_names = list(row.index)
             top_indices = abs_errors.argsort()[-2:][::-1]
-
             explanation = []
             for idx in top_indices:
                 feat = feature_names[idx]
@@ -170,7 +169,6 @@ def main():
                     reason = f"The attribute '{feat}' shows a normal value."
                 explanation.append(reason)
             log_entry["why"] = explanation
-
             print(f"Event {df_existing.shape[0]}: score={recon_error:.4f} [ANOMALY]")
             print("Top contributing features to anomaly score:")
             for reason in explanation:
@@ -189,3 +187,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+# This script is designed to run in a streaming context, processing one row at a time.
+# It reads the latest row from a CSV file, applies a GNN model to detect anomalies
