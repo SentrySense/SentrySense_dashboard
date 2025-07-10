@@ -9,11 +9,11 @@ from datetime import datetime
 import pytz
 
 # Paths
-GRAPH_PATH = 'splits/train_graph_0.pt'
-MODEL_PATH = 'models/gnn_model.pt'
-TRAIN_PROCESSED = 'splits/train_clean_numeric.csv'
-STREAM_FILE = 'splits/stream_clean_numeric.csv'
-LOG_FILE = 'logs/stream_logs.jsonl'
+GRAPH_PATH = "simulation_and_detection_/data/train_graph_0.pt"
+MODEL_PATH = "simulation_and_detection_/models/gnn_model.pt"
+TRAIN_PROCESSED = "simulation_and_detection_/splits/train_clean_numeric.csv"
+STREAM_FILE = "simulation_and_detection_/splits/stream_clean_numeric.csv"
+LOG_FILE = "simulation_and_detection_/logs/stream_logs.jsonl"
 
 CONTEXT_COLS = ['masked_user', 'source_ip', 'resource']
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
