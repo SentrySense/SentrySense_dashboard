@@ -1,0 +1,18 @@
+[
+    {
+        "threat_type": "Configuration Error",
+        "predicted_time": "",
+        "description": "API key not configured. Please set GEMINI_API_KEY in .env file to enable AI threat analysis.",
+        "risk_level": "Medium",
+        "affected_systems": [
+            "AI Analysis System"
+        ],
+        "suggested_fixes": [
+            "Set GEMINI_API_KEY in .env file",
+            "Install required dependencies"
+        ],
+        "confidence_score": 0.0,
+        "confidence_reasoning": "API not configured",
+        "file": "config_error.txt"
+    }
+]

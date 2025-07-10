@@ -238,8 +238,8 @@ def load_anomaly_data():
         from pathlib import Path
         
         # Step 1: Run stream_inference.py to update the log
-        stream_script = Path("simulation_and_detection_/src/stream_inference.py")
-        log_file = Path("simulation_and_detection_/logs/stream_logs.jsonl")
+        stream_script = Path("simulation_and_detection_\\src\\stream_inference.py")
+        log_file = Path("simulation_and_detection_\\logs\\stream_logs.jsonl")
         
         if not stream_script.exists():
             st.error(f"Inference script not found: {stream_script}")
@@ -306,9 +306,9 @@ def load_threat_data():
         from pathlib import Path
         
         # Path to the scripts and output file
-        fetch_script = Path("predictive_ai/fetch_threats.py")
-        predict_script = Path("predictive_ai/predict_threats.py")
-        output_file = Path("predictive_ai/predicted_threats.json")
+        fetch_script = Path("predictive_ai\\fetch_threats.py")
+        predict_script = Path("predictive_ai\\predict_threats.py")
+        output_file = Path("predictive_ai\\predicted_threats.json")
         
         # Step 1: Execute fetch_threats.py to get CVE data
         if not fetch_script.exists():

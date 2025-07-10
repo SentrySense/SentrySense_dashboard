@@ -126,12 +126,12 @@ for filename in threat_files:
         ai_output = response.text.strip()
         print(f"\n----- RAW AI OUTPUT for {filename} -----\n{ai_output}\n--------------------------------------\n")
         
-        # Remove wrapping triple backticks if present
-        if ai_output.startswith("\`\`\`json"):
-            ai_output = ai_output[len("\`\`\`json"):].strip()
-        if ai_output.endswith("\`\`\`"):
-            ai_output = ai_output[:-3].strip()
-        
+        if ai_output.startswith(r"```json"):
+            ai_output = ai_output[len(r"```json"):].strip()
+
+        if ai_output.endswith(r"```"):
+            ai_output = ai_output[: -len(r"```")].strip()
+
         if not ai_output:
             print(f"Empty AI output for {filename}, skipping...\n")
             continue
