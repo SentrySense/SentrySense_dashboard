@@ -9,12 +9,17 @@ from datetime import datetime
 import pytz
 import random
 
-# Paths
-GRAPH_PATH = 'splits/train_graph_0.pt'
-MODEL_PATH = 'models/gnn_model.pt'
-TRAIN_PROCESSED = 'splits/train_clean_numeric.csv'
-STREAM_FILE = 'splits/stream_clean_numeric.csv'
-LOG_FILE = 'logs/stream_logs.jsonl'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)).replace('\\', '/')
+SPLIT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "splits")).replace('\\', '/')
+MODEL_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "models")).replace('\\', '/')
+LOG_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "logs")).replace('\\', '/')
+
+GRAPH_PATH = os.path.join(SPLIT_DIR, "train_graph_0.pt")
+MODEL_PATH = os.path.join(MODEL_DIR, "gnn_model.pt")
+TRAIN_PROCESSED = os.path.join(SPLIT_DIR, "train_clean_numeric.csv")
+STREAM_FILE = os.path.join(SPLIT_DIR, "stream_clean_numeric.csv")
+LOG_FILE = os.path.join(LOG_DIR, "stream_logs.jsonl")
+
 
 CONTEXT_COLS = ['masked_user', 'source_ip', 'resource']
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'

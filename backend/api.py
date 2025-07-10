@@ -264,3 +264,8 @@ def monitor_anomaly_logs():
         seen.extend(new_alerts)
         with open(seen_path, "w") as f:
             json.dump(seen, f, indent=2)
+
+@app.on_event("startup")
+@repeat_every(seconds=15)  # or 10, or whatever frequency you want
+def run_stream_inference_background():
+    subprocess.run(["python", "simulation_and_detection_/src/stream_inference.py"])
