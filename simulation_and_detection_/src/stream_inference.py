@@ -7,13 +7,14 @@ from torch_geometric.nn import GCNConv
 import numpy as np
 from datetime import datetime
 import pytz
+import random
 
 # Paths
-GRAPH_PATH = 'splits/train_graph_0.pt'
-MODEL_PATH = 'models/gnn_model.pt'
-TRAIN_PROCESSED = 'splits/train_clean_numeric.csv'
-STREAM_FILE = 'splits/stream_clean_numeric.csv'
-LOG_FILE = 'logs/stream_logs.jsonl'
+GRAPH_PATH = 'simulation_and_detection_/splits/train_graph_0.pt'
+MODEL_PATH = 'simulation_and_detection_/models/gnn_model.pt'
+TRAIN_PROCESSED = 'simulation_and_detection_/splits/train_clean_numeric.csv'
+STREAM_FILE = 'simulation_and_detection_/splits/stream_clean_numeric.csv'
+LOG_FILE = 'simulation_and_detection_/logs/stream_logs.jsonl'
 
 CONTEXT_COLS = ['masked_user', 'source_ip', 'resource']
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -116,7 +117,7 @@ def main():
     node_features = torch.tensor(row.values, dtype=torch.float)
 
     log_entry = {
-        "stream_index": int(df_existing.shape[0]),
+        "stream_index": random.randint(3000, 4000),
         "raw_features": row.to_dict()
     }
 

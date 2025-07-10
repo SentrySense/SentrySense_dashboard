@@ -19,7 +19,7 @@ model = genai.GenerativeModel(model_name="models/gemini-1.5-flash-latest")
 # Load infrastructure for prompt
 infra_text = json.dumps(mock_infrastructure, indent=2)
 
-# Load existing predictions to avoid duplicates
+# Load existing predictions and avoid duplicates
 if os.path.exists(output_file):
     with open(output_file, 'r') as f:
         predictions = json.load(f)
@@ -28,7 +28,6 @@ else:
     predictions = []
     processed_files = set()
 
-# Updated prompt template
 prompt_template = """
 You are a cybersecurity AI assistant for an organization. Analyze the following CVE threat. Your response must:
 
@@ -55,13 +54,15 @@ Provide your response strictly as valid JSON with the following fields:
 - suggested_fixes: Specific, actionable fixes.
 """
 
-# Process only new CVEs
+# Track if any new predictions were added
+new_added = False
+
 for filename in os.listdir(threats_folder):
     if not filename.endswith(".txt") or filename in processed_files:
         continue
 
     file_path = os.path.join(threats_folder, filename)
-    
+
     with open(file_path, 'r') as f:
         threat_report = f.read()
 
@@ -87,12 +88,16 @@ for filename in os.listdir(threats_folder):
         prediction["file"] = filename
 
         predictions.append(prediction)
+        new_added = True
         print(f"Processed {filename}\n")
 
     except Exception as e:
         print(f"Error processing {filename}: {e}\n")
 
-with open(output_file, 'w') as f:
-    json.dump(predictions, f, indent=4)
-
-print(f"\nPredictions saved to {output_file}")
+# Only save if new predictions were added
+if new_added:
+    with open(output_file, 'w') as f:
+        json.dump(predictions, f, indent=4)
+    print(f"\nPredictions saved to {output_file}")
+else:
+    print("\nNo new CVEs. File unchanged.")
