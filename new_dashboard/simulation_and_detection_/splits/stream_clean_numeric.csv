@@ -1,6 +1,4 @@
 masked_user,source_ip,destination_ip,action,resource,protocol,access_result,location,device_type,login_attempt_count,log_hour,day_of_week,month,time_diff_prev,user_activity_frequency,unique_actions,source_subnet,dest_subnet,resource_category,access_flag,protocol_HTTP,protocol_HTTPS,protocol_FTP,protocol_SSH,protocol_RDP,device_desktop,device_mobile,device_tablet,location_count,session_duration,event_count_session,session_complexity
-583,358,593,22,1,90,26,4,1,44,42,0,93,6,72,20,14,4,8,43,1,1,1,0,1,0,1,1,8,64,33,37
-606,288,588,72,84,57,26,2,0,80,2,55,10,38,18,87,27,59,25,45,1,1,1,1,1,1,1,1,65,35,45,45
 102,546,349,93,3,92,15,0,1,1,91,1,84,56,18,67,33,82,53,1,1,0,0,0,1,1,1,0,44,30,29,35
 592,712,589,70,10,64,94,-1,1,86,40,59,58,65,3,3,43,25,53,24,1,1,0,0,1,1,0,0,10,26,23,46
 964,494,226,0,71,15,79,3,1,80,91,81,23,42,1,29,29,58,50,83,1,1,1,1,0,0,0,1,72,58,95,99
@@ -99,3 +97,5 @@ masked_user,source_ip,destination_ip,action,resource,protocol,access_result,loca
 997,197,138,29,54,72,89,1,1,55,30,7,17,36,49,38,46,80,31,74,0,0,0,0,1,1,0,0,13,10,35,17
 893,387,688,50,25,19,84,-1,1,20,13,36,85,78,36,60,27,10,68,94,0,1,0,1,0,1,0,1,46,14,88,52
 378,291,39,42,54,28,17,3,1,46,80,65,53,30,27,11,70,19,45,56,1,0,1,1,0,0,0,1,35,75,62,3
+583,358,593,22,1,90,26,4,1,44,42,0,93,6,72,20,14,4,8,43,1,1,1,0,1,0,1,1,8,64,33,37
+606,288,588,72,84,57,26,2,0,80,2,55,10,38,18,87,27,59,25,45,1,1,1,1,1,1,1,1,65,35,45,45
