@@ -8,12 +8,17 @@ import numpy as np
 from datetime import datetime
 import pytz
 
-# Paths
-GRAPH_PATH = 'splits/train_graph_0.pt'
-MODEL_PATH = 'models/gnn_model.pt'
-TRAIN_PROCESSED = 'splits/train_clean_numeric.csv'
-STREAM_FILE = 'splits/stream_clean_numeric.csv'
-LOG_FILE = 'logs/stream_logs.jsonl'
+# Get the directory of this script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the simulation_and_detection_ directory (parent of src)
+base_dir = os.path.dirname(script_dir)
+
+# Paths relative to simulation_and_detection_ directory
+GRAPH_PATH = os.path.join(base_dir, 'splits', 'train_graph_0.pt')
+MODEL_PATH = os.path.join(base_dir, 'models', 'gnn_model.pt')
+TRAIN_PROCESSED = os.path.join(base_dir, 'splits', 'train_clean_numeric.csv')
+STREAM_FILE = os.path.join(base_dir, 'splits', 'stream_clean_numeric.csv')
+LOG_FILE = os.path.join(base_dir, 'logs', 'stream_logs.jsonl')
 
 CONTEXT_COLS = ['masked_user', 'source_ip', 'resource']
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -82,6 +87,22 @@ def get_local_hour(location_code):
     return local_time.hour, city
 
 def main():
+    # Check if required files exist
+    if not os.path.exists(GRAPH_PATH):
+        print(f"Error: Graph file not found at {GRAPH_PATH}")
+        print(f"Please ensure the training data and model files are in the correct location.")
+        return
+    
+    if not os.path.exists(MODEL_PATH):
+        print(f"Error: Model file not found at {MODEL_PATH}")
+        print(f"Please ensure the trained model is in the correct location.")
+        return
+    
+    if not os.path.exists(TRAIN_PROCESSED):
+        print(f"Error: Training data file not found at {TRAIN_PROCESSED}")
+        print(f"Please ensure the training data files are in the correct location.")
+        return
+    
     # Load graph and model
     data = torch.load(GRAPH_PATH, weights_only=False)
     df_existing = pd.read_csv(TRAIN_PROCESSED)
@@ -96,6 +117,14 @@ def main():
 
     # --- Load and align streaming data ---
     train_df = pd.read_csv(TRAIN_PROCESSED)
+    
+    # Create stream file if it doesn't exist (use sample from training data)
+    if not os.path.exists(STREAM_FILE):
+        print(f"Stream file not found. Creating sample stream file at {STREAM_FILE}")
+        # Use a sample from training data as stream data
+        sample_stream = train_df.sample(n=min(100, len(train_df))).reset_index(drop=True)
+        sample_stream.to_csv(STREAM_FILE, index=False)
+    
     stream_df = pd.read_csv(STREAM_FILE)
 
     # Align columns: keep only those in train, in the same order
@@ -117,7 +146,8 @@ def main():
 
     log_entry = {
         "stream_index": int(df_existing.shape[0]),
-        "raw_features": row.to_dict()
+        "raw_features": row.to_dict(),
+        "timestamp": datetime.now().isoformat()
     }
 
     # --- Real-time location-based time anomaly check ---
