@@ -2,7 +2,6 @@ import streamlit as st
 import json
 import time
 import os
-import glob
 import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -232,121 +231,169 @@ def get_badge_html(level):
         return f'<span class="badge-low">NORMAL</span>'
 
 def load_anomaly_data():
-    """Load anomaly data from stream_logs.jsonl based on actual format"""
+    """Execute stream_inference.py and load anomaly data from stream_logs.jsonl"""
     try:
-        log_file = Path("simulation_and_detection_/logs/stream_logs.jsonl")
-        if not log_file.exists():
-            # Create sample data matching the actual format
-            sample_data = [
-                {
-                    "stream_index": 3147,
-                    "raw_features": {"masked_user": 1, "source_ip": 2, "location": 0},
-                    "anomaly": "low_level",
-                    "reason": "Unknown value(s) for: masked_user, source_ip",
-                    "timestamp": datetime.now().isoformat()
-                },
-                {
-                    "stream_index": 3148,
-                    "raw_features": {"masked_user": -1, "source_ip": 3, "location": 1},
-                    "anomaly": "medium",
-                    "reason": "Local time in Tokyo is 2:00 — time is not good (12am-4am)",
-                    "timestamp": datetime.now().isoformat()
-                },
-                {
-                    "stream_index": 3149,
-                    "raw_features": {"masked_user": 2, "source_ip": 1, "location": 2},
-                    "anomaly": True,
-                    "score": 25000000.5,
-                    "why": [
-                        {"feature": "source_ip", "original": 1.0, "reconstructed": 0.2, "abs_error": 0.8},
-                        {"feature": "masked_user", "original": 2.0, "reconstructed": 1.1, "abs_error": 0.9},
-                        {"feature": "location", "original": 2.0, "reconstructed": 1.8, "abs_error": 0.2}
-                    ],
-                    "timestamp": datetime.now().isoformat()
-                }
-            ]
-            return sample_data
+        import subprocess
+        import sys
+        from pathlib import Path
         
+        # Step 1: Run stream_inference.py to update the log
+        stream_script = Path("simulation_and_detection_/src/stream_inference.py")
+        log_file = Path("simulation_and_detection_/logs/stream_logs.jsonl")
+        
+        if not stream_script.exists():
+            st.error(f"Inference script not found: {stream_script}")
+            return []
+
+        try:
+            with st.spinner("Running anomaly detection..."):
+                result = subprocess.run(
+                    [sys.executable, str(stream_script)],
+                    cwd=Path.cwd(),
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+                
+                if result.returncode != 0:
+                    st.error(f"Error executing stream_inference.py:\n{result.stderr}")
+                    return []
+                else:
+                    if result.stdout:
+                        st.success("Anomaly inference completed!")
+                        
+        except subprocess.TimeoutExpired:
+            st.error("Anomaly inference script timed out after 60 seconds")
+            return []
+        except subprocess.SubprocessError as e:
+            st.error(f"Failed to run anomaly inference: {str(e)}")
+            return []
+
+        # Step 2: Read the log file
+        if not log_file.exists():
+            st.warning("stream_logs.jsonl not found. Please check anomaly pipeline.")
+            return []
+
         anomalies = []
         with open(log_file, 'r') as f:
             for line in f:
                 if line.strip():
                     data = json.loads(line.strip())
-                    # Add timestamp if not present
                     if 'timestamp' not in data:
                         data['timestamp'] = datetime.now().isoformat()
                     anomalies.append(data)
-        
+
         return anomalies[-10:] if len(anomalies) >= 10 else anomalies
     except Exception as e:
         st.error(f"Error loading anomaly data: {e}")
         return []
 
 def load_threat_data():
-    """Load threat data from CVE text files in threats folder"""
+    """Load threat data by executing fetch_threats.py and reading predicted_threats.json"""
     try:
-        threats_dir = Path("predictive_ai/threats")
-        if not threats_dir.exists():
-            # Create sample data
-            return [
-                {
-                    "cve_id": "CVE-2024-0001",
-                    "published_date": "2024-01-08",
-                    "description": "Critical buffer overflow vulnerability in network service allowing remote code execution",
-                    "severity": "HIGH",
-                    "score": "9.8",
-                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2024-0001"]
-                },
-                {
-                    "cve_id": "CVE-2024-0002", 
-                    "published_date": "2024-01-07",
-                    "description": "SQL injection vulnerability in web application allowing unauthorized data access",
-                    "severity": "MEDIUM",
-                    "score": "6.5",
-                    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2024-0002"]
+        import subprocess
+        import sys
+        from pathlib import Path
+        
+        # Path to the fetch_threats script and output file
+        fetch_script = Path("predictive_ai/threats/fetch_threats.py")
+        output_file = Path("predictive_ai/threats/predicted_threats.json")
+        
+        # Check if the fetch script exists
+        if not fetch_script.exists():
+            st.error(f"Threat fetching script not found: {fetch_script}")
+            return []
+        
+        # Execute the fetch_threats.py script
+        try:
+            with st.spinner("Fetching latest threat intelligence..."):
+                result = subprocess.run(
+                    [sys.executable, str(fetch_script)],
+                    cwd=Path.cwd(),
+                    capture_output=True,
+                    text=True,
+                    timeout=60  # 60 second timeout
+                )
+                
+                # Check if script executed successfully
+                if result.returncode != 0:
+                    st.error(f"Error executing threat fetching script: {result.stderr}")
+                    # Try to read existing file if script failed
+                    if output_file.exists():
+                        st.warning("Using cached threat data due to script execution failure.")
+                    else:
+                        return []
+                else:
+                    # Log successful execution (optional)
+                    if result.stdout:
+                        st.success("Threat intelligence updated successfully!")
+                        
+        except subprocess.TimeoutExpired:
+            st.error("Threat fetching script timed out after 60 seconds")
+            # Try to read existing file if available
+            if not output_file.exists():
+                return []
+        except subprocess.SubprocessError as e:
+            st.error(f"Failed to execute threat fetching script: {str(e)}")
+            # Try to read existing file if available
+            if not output_file.exists():
+                return []
+        
+        # Read the predicted_threats.json file
+        if not output_file.exists():
+            st.warning("Predicted threats file not found. Please run the threat fetching script manually.")
+            return []
+        
+        try:
+            with open(output_file, 'r', encoding='utf-8') as f:
+                threats_data = json.load(f)
+            
+            # Validate that we have a list
+            if not isinstance(threats_data, list):
+                st.error("Invalid format in predicted_threats.json - expected a list of threats")
+                return []
+            
+            # Validate and clean threat data
+            validated_threats = []
+            for i, threat in enumerate(threats_data):
+                if not isinstance(threat, dict):
+                    st.warning(f"Skipping invalid threat entry at index {i} - not a dictionary")
+                    continue
+                
+                # Ensure required fields exist with defaults
+                validated_threat = {
+                    "cve_id": threat.get("cve_id", f"UNKNOWN-{i}"),
+                    "threat_type": threat.get("threat_type", "Unknown Threat"),
+                    "description": threat.get("description", "No description available"),
+                    "severity": threat.get("risk_level", threat.get("severity", "Unknown")).upper(),
+                    "score": str(threat.get("severity_score", threat.get("score", "Unknown"))),
+                    "published_date": threat.get("discovery_date", threat.get("published_date", "Unknown")),
+                    "affected_systems": threat.get("affected_systems", []),
+                    "suggested_fixes": threat.get("suggested_fixes", []),
+                    "confidence": threat.get("confidence", 0.0),
+                    "references": threat.get("references", [])
                 }
-            ]
-        
-        threats = []
-        for txt_file in threats_dir.glob("*.txt"):
-            try:
-                with open(txt_file, 'r') as f:
-                    content = f.read()
-                    
-                threat = {"cve_id": txt_file.stem}
-                lines = content.split('\n')
                 
-                for line in lines:
-                    if line.startswith("Published Date:"):
-                        threat["published_date"] = line.split(":", 1)[1].strip()
-                    elif line.startswith("Description:"):
-                        threat["description"] = line.split(":", 1)[1].strip()
-                    elif line.startswith("Severity:"):
-                        severity_part = line.split(":", 1)[1].strip()
-                        if "(" in severity_part:
-                            threat["severity"] = severity_part.split("(")[0].strip()
-                            score_part = severity_part.split("Score: ")[1].replace(")", "") if "Score: " in severity_part else "Unknown"
-                            threat["score"] = score_part
-                        else:
-                            threat["severity"] = severity_part
-                            threat["score"] = "Unknown"
-                
-                # Extract references
-                threat["references"] = []
-                in_references = False
-                for line in lines:
-                    if line.startswith("References:"):
-                        in_references = True
-                    elif in_references and line.startswith(" - "):
-                        threat["references"].append(line.strip("- ").strip())
-                
-                threats.append(threat)
-            except Exception as e:
-                st.warning(f"Error reading {txt_file}: {e}")
-        
-        return threats
+                validated_threats.append(validated_threat)
+            
+            st.success(f"Successfully loaded {len(validated_threats)} threat(s) from intelligence feed")
+            return validated_threats
+            
+        except json.JSONDecodeError as e:
+            st.error(f"Failed to parse predicted_threats.json: {str(e)}")
+            return []
+        except UnicodeDecodeError as e:
+            st.error(f"Failed to read predicted_threats.json due to encoding issue: {str(e)}")
+            return []
+        except Exception as e:
+            st.error(f"Unexpected error reading threat data: {str(e)}")
+            return []
+            
+    except ImportError as e:
+        st.error(f"Missing required module: {str(e)}")
+        return []
     except Exception as e:
-        st.error(f"Error loading threat data: {e}")
+        st.error(f"Unexpected error in threat data loading: {str(e)}")
         return []
 
 def create_anomaly_timeline(anomalies):
@@ -435,6 +482,40 @@ def check_for_new_data(anomalies, threats):
     
     st.session_state.last_anomaly_count = current_anomaly_count
     st.session_state.last_threat_count = current_threat_count
+
+def display_latest_entries(anomalies, threats):
+    st.markdown("## 🔁 Latest Fetched Entries")
+    
+    # Real-Time Anomalies
+    st.markdown("### 🧠 Real-Time Anomalies")
+    if anomalies:
+        for anomaly in reversed(anomalies[-3:]):
+            st.markdown('<div class="anomaly-card">', unsafe_allow_html=True)
+            st.markdown(f"""
+                <strong>Stream #{anomaly.get("stream_index", "—")}</strong> | 
+                <em>{anomaly.get("timestamp", "")[:19].replace('T', ' ')}</em><br>
+                <strong>Reason:</strong> {anomaly.get("reason") or f'Score: {anomaly.get("score", "—")}'}<br>
+                {get_badge_html(anomaly.get("anomaly"))}
+            """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.info("No anomalies detected in latest inference.")
+    
+    # AI-Predicted CVE Threats
+    st.markdown("### 🎯 AI-Predicted CVE Threats")
+    if threats:
+        for threat in reversed(threats[-3:]):
+            st.markdown('<div class="threat-card">', unsafe_allow_html=True)
+            st.markdown(f"""
+                <strong>{threat.get("cve_id", "⚠️ Missing CVE ID")}</strong><br>
+                <em>{threat.get("published_date") or "Date N/A"}</em><br>
+                <strong>Type:</strong> {threat.get("threat_type") or "—"}<br>
+                <strong>Score:</strong> {threat.get("score") or "—"}<br>
+                {get_badge_html(threat.get("severity"))}
+            """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.info("No recent threats identified.")
 
 def main():
     # Sidebar
@@ -566,6 +647,9 @@ def main():
         )
         st.markdown('</div>', unsafe_allow_html=True)
     
+    # Display latest entries section
+    display_latest_entries(anomalies, threats)
+    
     # Tabs for different views
     tab1, tab2, tab3 = st.tabs(["🔍 Anomaly Detection", "🎯 Threat Intelligence", "📊 Analytics Dashboard"])
     
@@ -635,24 +719,42 @@ def main():
                     
                     with col1:
                         st.markdown(f"### {threat.get('cve_id', 'Unknown CVE')}")
+                        if threat.get('threat_type') and threat['threat_type'] != 'Unknown Threat':
+                            st.markdown(f"**Type:** {threat['threat_type']}")
                         st.markdown(f"**Published:** {threat.get('published_date', 'Unknown')}")
                         
                         if 'score' in threat and threat['score'] != 'Unknown':
                             st.markdown(f"**CVSS Score:** {threat['score']}")
+                        
+                        if 'confidence' in threat and threat['confidence'] > 0:
+                            st.progress(threat['confidence'], text=f"Confidence: {threat['confidence']:.1%}")
                     
                     with col2:
                         severity = threat.get('severity', 'Unknown')
                         st.markdown(get_badge_html(severity), unsafe_allow_html=True)
                     
+                    # Affected Systems
+                    if threat.get('affected_systems'):
+                        st.markdown(f"**Affected Systems:** {', '.join(threat['affected_systems'])}")
+                    
                     # Description
                     with st.expander("📋 Description"):
                         st.markdown(threat.get('description', 'No description available.'))
+                    
+                    # Suggested Fixes
+                    if threat.get('suggested_fixes'):
+                        with st.expander("🔧 Suggested Fixes"):
+                            for i, fix in enumerate(threat['suggested_fixes'], 1):
+                                st.markdown(f"{i}. {fix}")
                     
                     # References
                     if threat.get('references'):
                         with st.expander("🔗 References"):
                             for ref in threat['references']:
-                                st.markdown(f"- [{ref}]({ref})")
+                                if ref.startswith('http'):
+                                    st.markdown(f"- [{ref}]({ref})")
+                                else:
+                                    st.markdown(f"- {ref}")
                     
                     st.markdown('</div>', unsafe_allow_html=True)
                     st.markdown("")
