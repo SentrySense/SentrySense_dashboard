@@ -238,12 +238,16 @@ def load_anomaly_data():
         from pathlib import Path
         
         # Step 1: Run stream_inference.py to update the log
-        stream_script = Path("simulation_and_detection_/src/stream_inference.py")
-        log_file = Path("simulation_and_detection_/logs/stream_logs.jsonl")
+        stream_script = Path("simulation_and_detection_\src\stream_inference.py")
+        log_file = Path("simulation_and_detection_\logs\stream_logs.jsonl")
         
         if not stream_script.exists():
             st.error(f"Inference script not found: {stream_script}")
-            return []
+            # Try to read existing file if available
+            if log_file.exists():
+                st.warning("Using cached anomaly data.")
+            else:
+                return []
 
         try:
             with st.spinner("Running anomaly detection..."):
@@ -257,17 +261,23 @@ def load_anomaly_data():
                 
                 if result.returncode != 0:
                     st.error(f"Error executing stream_inference.py:\n{result.stderr}")
-                    return []
+                    # Try to read existing file if available
+                    if not log_file.exists():
+                        return []
                 else:
                     if result.stdout:
                         st.success("Anomaly inference completed!")
                         
         except subprocess.TimeoutExpired:
             st.error("Anomaly inference script timed out after 60 seconds")
-            return []
+            # Try to read existing file if available
+            if not log_file.exists():
+                return []
         except subprocess.SubprocessError as e:
             st.error(f"Failed to run anomaly inference: {str(e)}")
-            return []
+            # Try to read existing file if available
+            if not log_file.exists():
+                return []
 
         # Step 2: Read the log file
         if not log_file.exists():
@@ -289,59 +299,92 @@ def load_anomaly_data():
         return []
 
 def load_threat_data():
-    """Load threat data by executing fetch_threats.py and reading predicted_threats.json"""
+    """Load threat data by executing fetch_threats.py, then predict_threats.py, and reading predicted_threats.json"""
     try:
         import subprocess
         import sys
         from pathlib import Path
         
-        # Path to the fetch_threats script and output file
-        fetch_script = Path("predictive_ai/threats/fetch_threats.py")
-        output_file = Path("predictive_ai/threats/predicted_threats.json")
+        # Path to the scripts and output file
+        fetch_script = Path("predictive_ai/fetch_threats.py")
+        predict_script = Path("predictive_ai/predict_threats.py")
+        output_file = Path("predictive_ai/predicted_threats.json")
         
-        # Check if the fetch script exists
+        # Step 1: Execute fetch_threats.py to get CVE data
         if not fetch_script.exists():
             st.error(f"Threat fetching script not found: {fetch_script}")
-            return []
-        
-        # Execute the fetch_threats.py script
-        try:
-            with st.spinner("Fetching latest threat intelligence..."):
-                result = subprocess.run(
-                    [sys.executable, str(fetch_script)],
-                    cwd=Path.cwd(),
-                    capture_output=True,
-                    text=True,
-                    timeout=60  # 60 second timeout
-                )
-                
-                # Check if script executed successfully
-                if result.returncode != 0:
-                    st.error(f"Error executing threat fetching script: {result.stderr}")
-                    # Try to read existing file if script failed
-                    if output_file.exists():
-                        st.warning("Using cached threat data due to script execution failure.")
+            # Try to read existing file if available
+            if output_file.exists():
+                st.warning("Using cached threat data.")
+            else:
+                return []
+        else:
+            try:
+                with st.spinner("🔍 Fetching latest CVE threats from NVD..."):
+                    result = subprocess.run(
+                        [sys.executable, str(fetch_script)],
+                        cwd=Path.cwd(),
+                        capture_output=True,
+                        text=True,
+                        timeout=120  # 2 minute timeout for CVE fetching
+                    )
+                    
+                    if result.returncode != 0:
+                        st.error(f"Error executing CVE fetching script: {result.stderr}")
+                        # Continue to prediction step anyway
                     else:
-                        return []
-                else:
-                    # Log successful execution (optional)
-                    if result.stdout:
-                        st.success("Threat intelligence updated successfully!")
-                        
-        except subprocess.TimeoutExpired:
-            st.error("Threat fetching script timed out after 60 seconds")
-            # Try to read existing file if available
-            if not output_file.exists():
-                return []
-        except subprocess.SubprocessError as e:
-            st.error(f"Failed to execute threat fetching script: {str(e)}")
-            # Try to read existing file if available
-            if not output_file.exists():
-                return []
+                        if result.stdout:
+                            st.success("✅ CVE data fetched successfully!")
+                            
+            except subprocess.TimeoutExpired:
+                st.error("CVE fetching script timed out after 2 minutes")
+                # Continue to prediction step anyway
+            except subprocess.SubprocessError as e:
+                st.error(f"Failed to execute CVE fetching script: {str(e)}")
+                # Continue to prediction step anyway
         
-        # Read the predicted_threats.json file
+        # Step 2: Execute predict_threats.py to analyze threats with AI
+        if not predict_script.exists():
+            st.error(f"Threat prediction script not found: {predict_script}")
+            # Try to read existing file if available
+            if output_file.exists():
+                st.warning("Using existing threat predictions.")
+            else:
+                return []
+        else:
+            try:
+                with st.spinner("🤖 Analyzing threats with AI intelligence..."):
+                    result = subprocess.run(
+                        [sys.executable, str(predict_script)],
+                        cwd=Path.cwd(),
+                        capture_output=True,
+                        text=True,
+                        timeout=180  # 3 minute timeout for AI analysis
+                    )
+                    
+                    if result.returncode != 0:
+                        st.error(f"Error executing threat prediction script: {result.stderr}")
+                        # Try to read existing file if script failed
+                        if not output_file.exists():
+                            return []
+                    else:
+                        if result.stdout:
+                            st.success("🧠 AI threat analysis completed!")
+                            
+            except subprocess.TimeoutExpired:
+                st.error("Threat prediction script timed out after 3 minutes")
+                # Try to read existing file if available
+                if not output_file.exists():
+                    return []
+            except subprocess.SubprocessError as e:
+                st.error(f"Failed to execute threat prediction script: {str(e)}")
+                # Try to read existing file if available
+                if not output_file.exists():
+                    return []
+        
+        # Step 3: Read the predicted_threats.json file
         if not output_file.exists():
-            st.warning("Predicted threats file not found. Please run the threat fetching script manually.")
+            st.warning("AI-predicted threats file not found. Please run the threat analysis pipeline manually.")
             return []
         
         try:
@@ -353,47 +396,49 @@ def load_threat_data():
                 st.error("Invalid format in predicted_threats.json - expected a list of threats")
                 return []
             
-            # Validate and clean threat data
+            # Validate and clean AI-predicted threat data
             validated_threats = []
             for i, threat in enumerate(threats_data):
                 if not isinstance(threat, dict):
                     st.warning(f"Skipping invalid threat entry at index {i} - not a dictionary")
                     continue
                 
-                # Ensure required fields exist with defaults
+                # Map AI prediction fields to dashboard format
                 validated_threat = {
-                    "cve_id": threat.get("cve_id", f"UNKNOWN-{i}"),
-                    "threat_type": threat.get("threat_type", "Unknown Threat"),
-                    "description": threat.get("description", "No description available"),
-                    "severity": threat.get("risk_level", threat.get("severity", "Unknown")).upper(),
-                    "score": str(threat.get("severity_score", threat.get("score", "Unknown"))),
-                    "published_date": threat.get("discovery_date", threat.get("published_date", "Unknown")),
+                    "cve_id": threat.get("file", f"AI-THREAT-{i}").replace('.txt', ''),
+                    "threat_type": threat.get("threat_type", "Unknown AI-Predicted Threat"),
+                    "description": threat.get("description", "No description available from AI analysis"),
+                    "severity": threat.get("risk_level", "Unknown").upper(),
+                    "score": str(threat.get("confidence_score", "Unknown")),
+                    "published_date": threat.get("predicted_time") or "AI Predicted",
                     "affected_systems": threat.get("affected_systems", []),
                     "suggested_fixes": threat.get("suggested_fixes", []),
-                    "confidence": threat.get("confidence", 0.0),
-                    "references": threat.get("references", [])
+                    "confidence": threat.get("confidence_score", 0.0),
+                    "references": [],  # AI predictions don't include references
+                    "ai_generated": True,  # Flag to indicate this is AI-generated
+                    "source_file": threat.get("file", "Unknown")
                 }
                 
                 validated_threats.append(validated_threat)
             
-            st.success(f"Successfully loaded {len(validated_threats)} threat(s) from intelligence feed")
+            st.success(f"🎯 Successfully loaded {len(validated_threats)} AI-predicted threat(s)")
             return validated_threats
             
         except json.JSONDecodeError as e:
-            st.error(f"Failed to parse predicted_threats.json: {str(e)}")
+            st.error(f"Failed to parse AI predictions file: {str(e)}")
             return []
         except UnicodeDecodeError as e:
-            st.error(f"Failed to read predicted_threats.json due to encoding issue: {str(e)}")
+            st.error(f"Failed to read AI predictions file due to encoding issue: {str(e)}")
             return []
         except Exception as e:
-            st.error(f"Unexpected error reading threat data: {str(e)}")
+            st.error(f"Unexpected error reading AI threat predictions: {str(e)}")
             return []
             
     except ImportError as e:
-        st.error(f"Missing required module: {str(e)}")
+        st.error(f"Missing required module for threat analysis: {str(e)}")
         return []
     except Exception as e:
-        st.error(f"Unexpected error in threat data loading: {str(e)}")
+        st.error(f"Unexpected error in AI threat analysis pipeline: {str(e)}")
         return []
 
 def create_anomaly_timeline(anomalies):
@@ -718,37 +763,51 @@ def main():
                     col1, col2 = st.columns([3, 1])
                     
                     with col1:
-                        st.markdown(f"### {threat.get('cve_id', 'Unknown CVE')}")
+                        # Show if this is AI-generated
+                        if threat.get('ai_generated'):
+                            st.markdown(f"### 🤖 {threat.get('cve_id', 'Unknown CVE')} (AI Predicted)")
+                            st.markdown(f"**Source:** {threat.get('source_file', 'Unknown')}")
+                        else:
+                            st.markdown(f"### {threat.get('cve_id', 'Unknown CVE')}")
+                        
                         if threat.get('threat_type') and threat['threat_type'] != 'Unknown Threat':
                             st.markdown(f"**Type:** {threat['threat_type']}")
                         st.markdown(f"**Published:** {threat.get('published_date', 'Unknown')}")
                         
                         if 'score' in threat and threat['score'] != 'Unknown':
-                            st.markdown(f"**CVSS Score:** {threat['score']}")
+                            if threat.get('ai_generated'):
+                                st.markdown(f"**AI Confidence:** {threat['score']}")
+                            else:
+                                st.markdown(f"**CVSS Score:** {threat['score']}")
                         
                         if 'confidence' in threat and threat['confidence'] > 0:
-                            st.progress(threat['confidence'], text=f"Confidence: {threat['confidence']:.1%}")
+                            confidence_label = "AI Confidence" if threat.get('ai_generated') else "Confidence"
+                            st.progress(threat['confidence'], text=f"{confidence_label}: {threat['confidence']:.1%}")
                     
                     with col2:
                         severity = threat.get('severity', 'Unknown')
                         st.markdown(get_badge_html(severity), unsafe_allow_html=True)
+                        
+                        # Add AI indicator
+                        if threat.get('ai_generated'):
+                            st.markdown('<span style="color: #00ff88; font-size: 0.8rem;">🤖 AI Analysis</span>', unsafe_allow_html=True)
                     
                     # Affected Systems
                     if threat.get('affected_systems'):
                         st.markdown(f"**Affected Systems:** {', '.join(threat['affected_systems'])}")
                     
                     # Description
-                    with st.expander("📋 Description"):
+                    with st.expander("📋 AI Threat Analysis" if threat.get('ai_generated') else "📋 Description"):
                         st.markdown(threat.get('description', 'No description available.'))
                     
                     # Suggested Fixes
                     if threat.get('suggested_fixes'):
-                        with st.expander("🔧 Suggested Fixes"):
+                        with st.expander("🔧 AI-Recommended Fixes" if threat.get('ai_generated') else "🔧 Suggested Fixes"):
                             for i, fix in enumerate(threat['suggested_fixes'], 1):
                                 st.markdown(f"{i}. {fix}")
                     
-                    # References
-                    if threat.get('references'):
+                    # References (only for non-AI threats)
+                    if threat.get('references') and not threat.get('ai_generated'):
                         with st.expander("🔗 References"):
                             for ref in threat['references']:
                                 if ref.startswith('http'):
