@@ -1,10 +1,11 @@
 services:
   - type: web
     name: sentrysense-backend
-    runtime: python
+    env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: ./start.sh
-    envVars:
-      - key: SLACK_WEBHOOK_URL
-        value: YOUR_WEBHOOK
-    plan: free
+    runtime: python
+    region: oregon
+    branch: main
+    pythonVersion: 3.11.9
