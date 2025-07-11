@@ -1,18 +1,18 @@
-# FastAPI and server
-fastapi
-uvicorn
-python-multipart
-pydantic
-requests
-fastapi-utils
+# Server
+fastapi==0.110.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+pydantic==2.7.1
+fastapi-utils==0.2.1
+requests==2.31.0
 
-# ML and processing
+# ML
 torch==2.7.1
 torch-geometric==2.5.3
 numpy==1.26.4
 pandas==2.2.2
 pytz==2024.1
 
-# Dashboard and plotting (for Streamlit UI)
-streamlit>=1.28.0
-plotly>=5.15.0
+# Streamlit UI
+streamlit==1.33.0
+plotly==5.21.0
