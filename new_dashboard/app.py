@@ -587,12 +587,12 @@ def main():
         st.markdown("---")
         
         # Quick Stats
-        #anomalies = load_anomaly_data()
-        #threats = load_threat_data()
+        anomalies = load_anomaly_data()
+        threats = load_threat_data()
         
         st.markdown("### 📈 Quick Stats")
-        st.metric("Active Anomalies", 10)
-        st.metric("Threat Alerts", 6)
+        st.metric("Active Anomalies", len(anomalies))
+        st.metric("Threat Alerts", len(threats))
         
         high_severity_threats = sum(1 for t in threats if t.get('severity') == 'HIGH')
         st.metric("High Severity", high_severity_threats, delta=high_severity_threats if high_severity_threats > 0 else None)
@@ -629,14 +629,15 @@ def main():
 
     # Main content
     st.markdown('<h1 class="main-header">SentrySense Dashboard</h1>', unsafe_allow_html=True)
-     # Show alert banner if needed
+    
+# Show alert banner if needed
     if st.session_state.show_alert:
         st.markdown(f'<div class="alert-banner">{st.session_state.alert_message}</div>', 
                    unsafe_allow_html=True)
         if st.button("✕ Dismiss Alert"):
             st.session_state.show_alert = False
-            #st.rerun()
-    
+            st.rerun()
+
     # Load data
     anomalies = load_anomaly_data()
     threats = load_threat_data()
@@ -644,7 +645,6 @@ def main():
     # Check for new data and show alerts
     check_for_new_data(anomalies, threats)
     
-   
     # Overview metrics
     col1, col2, col3, col4 = st.columns(4)
 
