@@ -591,8 +591,8 @@ def main():
         #threats = load_threat_data()
         
         st.markdown("### 📈 Quick Stats")
-        st.metric("Active Anomalies", len(anomalies))
-        st.metric("Threat Alerts", len(threats))
+        st.metric("Active Anomalies", 10)
+        st.metric("Threat Alerts", 6)
         
         high_severity_threats = sum(1 for t in threats if t.get('severity') == 'HIGH')
         st.metric("High Severity", high_severity_threats, delta=high_severity_threats if high_severity_threats > 0 else None)
