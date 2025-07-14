@@ -579,7 +579,7 @@ def main():
         
         # Auto-refresh controls
         st.session_state.auto_refresh = st.checkbox("🔄 Auto Refresh", value=st.session_state.auto_refresh)
-        refresh_interval = st.selectbox("Refresh Interval", [15, 30, 60], index=0)
+        refresh_interval = st.selectbox("Refresh Interval(in seconds)", [15, 30, 60], index=0)
         
         if st.button("🔄 Refresh Now", use_container_width=True):
             st.rerun()
