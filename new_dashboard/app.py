@@ -636,7 +636,7 @@ def main():
                    unsafe_allow_html=True)
         if st.button("✕ Dismiss Alert"):
             st.session_state.show_alert = False
-            #st.rerun()
+            st.rerun()
 
     # Load data
     anomalies = load_anomaly_data()
