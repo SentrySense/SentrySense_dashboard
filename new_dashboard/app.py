@@ -712,9 +712,9 @@ def main():
             st.info("No anomalies detected recently. System is running normally.")
         else:
             # Timeline chart
-            timeline_fig = create_anomaly_timeline(anomalies)
-            if timeline_fig:
-                st.plotly_chart(timeline_fig, use_container_width=True)
+            #timeline_fig = create_anomaly_timeline(anomalies)
+            #if timeline_fig:
+                #st.plotly_chart(timeline_fig, use_container_width=True)
             
             st.markdown("### Recent Anomaly Events")
             
